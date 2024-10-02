@@ -14,7 +14,7 @@ on:
 
     branches:
 
-      - mi-rama
+      - main
 
 jobs:
 
