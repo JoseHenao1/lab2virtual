@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  # Test's job
+  # Unit tests job
   tests:
     name: Unit tests
     # Run on Ubuntu using the latest version
@@ -35,9 +35,9 @@ jobs:
       - name: Run Tests
         run: mvn -B test
 
-  # Sonar's Job
+  # Sonar's job
   sonar:
-    # Depends on test's job
+    # Depends on the test's job
     needs: tests
     name: SonarCloud analysis
     # Run on Ubuntu using the latest version
@@ -61,7 +61,6 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
       # Set up Maven cache
       - name: Cache Maven packages
-        # This action allows caching dependencies and build outputs to improve workflow execution time.
         uses: actions/cache@v1
         with:
           path: ~/.m2
@@ -73,3 +72,36 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # Build job
+  build:
+    # Depends on the sonar job
+    needs: sonar
+    name: Build application
+    # Run on Ubuntu using the latest version
+    runs-on: ubuntu-latest
+    steps:
+      # Check-out your repository under $GITHUB_WORKSPACE, so your workflow can access it
+      - uses: actions/checkout@v1
+      # Set up JDK 11
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '11'
+      # Set up Maven cache
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      # Build the application using Maven
+      - name: Build with Maven
+        run: mvn -B package -DskipTests --file pom.xml
+      # Upload JAR artifact
+      - name: Upload JAR
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifact
+          path: target/lab2virtual-0.0.1-SNAPSHOT.jar
+
